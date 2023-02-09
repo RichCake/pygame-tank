@@ -353,10 +353,12 @@ def end_screen():
 
 
 def start_level(number_of_tanks):
+    # number_of_tanks - общее кол-во танков
+    # Генерируем уровень
     generate_level(load_level('map_midleburg'))
-
+    # Получаем список всех танков
     tanks = generete_player_enemy(spawn_points, n=number_of_tanks)
-
+    # Распаковываем на игрока и список остальных противников
     player, *enemys = tanks
 
     shells = []
@@ -373,7 +375,7 @@ def start_level(number_of_tanks):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 terminate()
-
+            # Движение игрока
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_w:
                     player.velocity_y = -player.velocity
@@ -394,6 +396,7 @@ def start_level(number_of_tanks):
                 shell = player.shoot()
                 if shell is not None:
                     shells.append(shell)
+        # движение противников
         for enemy in enemys:
             if 0 <= enemy.rect.x <= screen.get_width() and 0 <= enemy.rect.y <= screen.get_height() and player.groups() \
                     and enemy.groups():
@@ -401,7 +404,8 @@ def start_level(number_of_tanks):
                 shell = enemy.shoot()
                 if shell is not None:
                     shells.append(shell)
-
+        # Перезарядка, колизия с объектами и снарядами
+        # учет статистики
         for tank in tanks:
             tank.reload()
             explosion, con = tank.collision()
@@ -412,7 +416,7 @@ def start_level(number_of_tanks):
                         player.result['Полученный урон'] += player.damage
                     else:
                         player.result['Нанесенный урон'] += player.damage
-
+        # Перемещение снарядов и колизия их с объектами
         for shell in shells:
             shell.throw()
             explosion = shell.collision()
@@ -436,6 +440,7 @@ def start_level(number_of_tanks):
         shell_group.draw(screen)
         player_group.draw(screen)
         effects_proup.draw(screen)
+        # Рисуем прочность танка
         for tank in tanks:
             if tank.groups():
                 tank.draw_health_bar(screen)
@@ -443,7 +448,7 @@ def start_level(number_of_tanks):
                     tank.move_square()
         clock.tick(FPS)
         pygame.display.flip()
-
+        # Ниже проверка на прохождение уровня и переход к следующему
         killed_enemys = 0
         for enemy in enemys:
             if not enemy.groups():
