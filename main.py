@@ -1,5 +1,4 @@
 import os
-import pprint
 import sys
 import time
 
@@ -110,7 +109,6 @@ house_images = {
     3: load_image('craftpix-net-280167-free-level-map-pixel-art-assets-pack/2 Objects/Houses/3.png'),
     4: load_image('craftpix-net-280167-free-level-map-pixel-art-assets-pack/2 Objects/Houses/6.png'),
     5: load_image('craftpix-net-280167-free-level-map-pixel-art-assets-pack/2 Objects/Houses/5.png'),
-    # 6: load_image('craftpix-net-280167-free-level-map-pixel-art-assets-pack/2 Objects/Houses/4.png'),
 }
 for item, key in enumerate(house_images):
     house_images[key] = pygame.transform.scale(house_images[key],
@@ -410,7 +408,6 @@ def start_level(number_of_tanks):
             if explosion:
                 explosions.append(explosion)
                 if con:
-                    pprint.pprint(player.result)
                     if tank.__class__.__name__ == 'Tank':
                         player.result['Полученный урон'] += player.damage
                     else:
@@ -570,57 +567,6 @@ def generate_level(level):
                 Tree('birch', x, y)
 
 
-def blitRotate(surf, image, pos, originPos, angle):
-    # offset from pivot to center
-    image_rect = image.get_rect(topleft=(pos[0] - originPos[0], pos[1] - originPos[1]))
-    offset_center_to_pivot = pygame.math.Vector2(pos) - image_rect.center
-
-    # roatated offset from pivot to center
-    rotated_offset = offset_center_to_pivot.rotate(-angle)
-
-    # roatetd image center
-    rotated_image_center = (pos[0] - rotated_offset.x, pos[1] - rotated_offset.y)
-
-    # get a rotated image
-    rotated_image = pygame.transform.rotate(image, angle)
-    rotated_image_rect = rotated_image.get_rect(center=rotated_image_center)
-
-    # rotate and blit the image
-    surf.blit(rotated_image, rotated_image_rect)
-
-    # draw rectangle around the image
-    pygame.draw.rect(surf, (255, 0, 0), (*rotated_image_rect.topleft, *rotated_image.get_size()), 2)
-
-
-def check_next_node(x, y):
-    if 0 <= x < cols and 0 <= y < rows and not obstacles[y][x]:
-        return True
-    return False
-
-
-def get_next_nodes(x, y):
-    # check_next_node = lambda x, y: True if 0 <= x < cols and 0 <= y < rows and not obstacles[y][x] else False
-    ways = [-1, 0], [0, -1], [1, 0], [0, 1], [-1, -1], [1, -1], [1, 1], [-1, 1]
-    return [(x + dx, y + dy) for dx, dy in ways if check_next_node(x + dx, y + dy)]
-
-
-def bfs(start, goal, graph):
-    queue = deque([start])
-    visited = {start: None}
-
-    while queue:
-        cur_node = queue.popleft()
-        if cur_node == goal:
-            break
-
-        next_nodes = graph[cur_node]
-        for next_node in next_nodes:
-            if next_node not in visited:
-                queue.append(next_node)
-                visited[next_node] = cur_node
-    return queue, visited
-
-
 class Camera:
     def __init__(self):
         self.dx = 0
@@ -737,20 +683,12 @@ class Tank(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
         self.angle = 0
-        # self.tank_screen = pygame.Surface(hull.get_size())
-        # self.hull = hull
-        # print(type(self.hull))
-        # self.weapon = weapon
-        # print(type(self.weapon))
-        # self.image = weapon.blit(hull, (0, 0))
-        # print(type(self.image))
         self.image = tank_model
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
         self.x, self.y = self.rect.x // tile_width, self.rect.y // tile_height
         self.pos_x, self.pos_y = self.rect.x, self.rect.y
-        self.velocity = 5
         self.hp = 3150
         self.damage = 310
 
@@ -759,9 +697,10 @@ class Tank(pygame.sprite.Sprite):
             'Полученный урон': 0
         }
 
-        self.time_to_reload = FPS * 0.5
+        self.time_to_reload = FPS * 1
         self.reloading_time = self.time_to_reload
 
+        self.velocity = 4
         self.velocity_x = 0
         self.velocity_y = 0
 
@@ -779,8 +718,6 @@ class Tank(pygame.sprite.Sprite):
             return Explosion(obj.rect.x, obj.rect.y), False
         if pygame.sprite.spritecollide(self, shell_group, True):
             self.hp -= self.damage
-            # if self.__class__ == Tank:
-            #     self.result['Полученный урон'] += self.damage
             if self.hp <= 0:
                 self.delete()
             return Explosion(self.rect.x, self.rect.y), True
@@ -791,22 +728,6 @@ class Tank(pygame.sprite.Sprite):
             self.pos_x += x
             self.pos_y += y
             self.rect = self.rect.move(x, y)
-
-    # def move_to_cell(self, road):
-    #     x_cell, y_cell = road[self.i]
-    #     print(f'x_cell, y_cell: {x_cell, y_cell}')
-    #     x, y = self.get_coords()
-    #     print(f'x_pos, y_pos: {self.pos_x / TILE, self.pos_y / TILE, self.pos_x // TILE, self.pos_y // TILE}')
-    #     dx, dy = (x_cell - x), (y_cell - y)
-    #     print(f'dx, dy: {dx, dy}')
-    #     self.velocity_x = dx * self.velocity
-    #     self.velocity_y = dy * self.velocity
-    #     print(self.pos_x // TILE == x_cell, self.pos_y // TILE == y_cell, -self.i <= len(road))
-    #     if self.pos_x // TILE == x_cell and self.pos_y // TILE == y_cell and -self.i <= len(road):
-    #         self.x += dx
-    #         self.x += dy
-    #         self.i -= 1
-    #     print()
 
     def get_coords(self):
         return self.x, self.y
@@ -835,37 +756,6 @@ class Tank(pygame.sprite.Sprite):
         if angle is not False:
             self.image = pygame.transform.rotate(tank_model, angle)
 
-    def road_to_target(self, target):
-        graph = {}
-        for y, row in enumerate(obstacles):
-            for x, col in enumerate(row):
-                if not col:
-                    graph[(x, y)] = graph.get((x, y), []) + get_next_nodes(x, y)
-
-        start = self.get_coords()
-        print(start)
-        goal = start
-        queue = deque([start])
-        visited = {start: None}
-
-        if target and not obstacles[target[1]][target[0]]:
-            queue, visited = bfs(start, target, graph)
-            goal = target
-
-        path_head, path_segment = goal, goal
-        road = []
-        while path_segment and path_segment in visited:
-            road.append(path_segment)
-            # x_node, y_node = path_segment[0], path_segment[1]
-            # x_pos, y_pos = self.get_coords()[0], self.get_coords()[1]
-            # dx, dy = (x_node - x_pos) * TILE, (y_node - y_pos) * TILE
-            # road.append((dx, dy))
-            # self.move(dx, dy)
-            # print(self.get_coords())
-            path_segment = visited[path_segment]
-        print(road[::1])
-        return road[::1]
-
     def rotate_weapon(self, mouse_pos, angle=0):
         w_dx, w_dy = 64, 87
         m_x, m_y = mouse_pos
@@ -878,10 +768,7 @@ class Tank(pygame.sprite.Sprite):
                     angle = int(math.degrees(math.atan(a/b)))
                 else:
                     angle = int(math.degrees(math.atan(a/b) - math.pi))
-                # print(angle)
                 self.angle = angle
-                # print(screen, tank_model, (self.rect.x, self.rect.y), (w_dx, w_dy), angle, end='\n')
-                # blitRotate(screen, tank_model, (self.rect.x, self.rect.y), (w_dx, w_dy), angle)
                 self.image = pygame.transform.rotate(tank_model, angle)
 
     def shoot(self):
@@ -960,10 +847,10 @@ class Enemy(Tank):
     def __init__(self, pos_x, pos_y):
         super(Enemy, self).__init__(pos_x, pos_y)
         self.velocity = 2
-        self.time_to_reload = FPS * 2
+        self.time_to_reload = FPS * 3
         self.c = True
         self.direction = "right"
-        self.square_side = 500
+        self.square_side = 1000
         self.pos_x, self.pos_y = self.rect.x, self.rect.y
 
     def move_square(self):
@@ -984,29 +871,6 @@ class Enemy(Tank):
             self.move(0, -self.velocity)
             if self.pos_y <= 0:
                 self.direction = "right"
-
-    def move_to_cell(self, x_cell, y_cell):
-        if self.c:
-            # self.c = False
-            print(f'x_cell, y_cell: {x_cell, y_cell}')
-            x, y = self.get_coords()
-            print(f'x_pos, y_pos: {self.pos_x, self.pos_y, self.pos_x // TILE, self.pos_y // TILE}')
-            dx, dy = (x_cell - x), (y_cell - y)
-            print(f'x, y: {x, y}')
-            print(f'dx, dy: {dx, dy}')
-            self.move(dx * TILE, dy * TILE)
-            self.x += dx
-            self.y += dy
-            print()
-            clock.tick(10)
-        # self.velocity_x = dx * TILE
-        # self.velocity_y = dy * TILE
-        # if (self.c == TILE // self.velocity or (x_cell == self.pos_x // TILE and y_cell == self.pos_y // TILE)) \
-        #         and -self.i <= len(road):
-        # self.x += dx
-        # self.x += dy
-        # self.i -= 1
-        # print()
 
 
 if __name__ == '__main__':
